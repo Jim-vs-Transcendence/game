@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { PlayerData, Players, Data } from './player.data';
+import { PlayerData, Players, Data, startFlag } from './player.data';
 
 @WebSocketGateway()
 export class GameGateway
@@ -10,6 +10,9 @@ export class GameGateway
 	private players: Players[] = [];
 
 	private oneGame: Players = new Players();
+
+	private leftReady: boolean = false;
+	private RightReady: boolean = false;
 
 	@WebSocketServer() server: Server;
 
@@ -30,18 +33,35 @@ export class GameGateway
 		else {
 			this.oneGame.player2 = playerData;
 			this.players.push(this.oneGame);
+			console.log('I certainly send the fucking message');
+			this.server.to(this.oneGame.player1.socket).emit('start', false);
+			this.server.to(this.oneGame.player2.socket).emit('start', true);
 		}
 
 		// key number가 필요 없을 듯.
 		// 화살표 아래 버튼 눌렀을 때
-		client.on('keydown', (data: { clientId: string, key: number }) => {
-			const { clientId, key } = data;
+		client.on('keydown', (data: { clientId: string, key: number, startFlag: boolean }) => {
+			const { clientId, key, startFlag } = data;
 			console.log('is key downed? ', data);
-			if (this.oneGame.player1.socket === data.clientId) {
-				this.oneGame.player1.paddleY = -30;
+			if (!data.startFlag) {
+				if (this.oneGame.player1.socket === data.clientId) {
+					this.oneGame.player1.paddleY = -30;
+				}
+				else {
+					this.oneGame.player2.paddleY = -30;
+				}
 			}
 			else {
-				this.oneGame.player2.paddleY = -30;
+				if (this.oneGame.player1.socket === data.clientId) {
+					this.leftReady = true;
+				}
+				else {
+					this.RightReady = true;
+				}
+				if (this.leftReady && this.RightReady) {
+					this.server.to(this.oneGame.player1.socket).emit('ready', true);
+					this.server.to(this.oneGame.player2.socket).emit('ready', true);
+				}
 			}
 
 			let left: Data = new Data();
@@ -50,11 +70,9 @@ export class GameGateway
 			if (this.players.length === 1) {
 				console.log(this.oneGame.player1.socket, ' ', this.oneGame.player2.socket);
 
-				left.side = false;
 				left.p1Paddle = this.oneGame.player1.paddleY;
 				left.p2Paddle = this.oneGame.player2.paddleY;
 
-				right.side = true;
 				right.p1Paddle = this.oneGame.player2.paddleY;
 				right.p2Paddle = this.oneGame.player1.paddleY;
 
@@ -81,11 +99,9 @@ export class GameGateway
 			if (this.players.length === 1) {
 				console.log(this.oneGame.player1.socket, ' ', this.oneGame.player2.socket);
 
-				left.side = false;
 				left.p1Paddle = this.oneGame.player1.paddleY;
 				left.p2Paddle = this.oneGame.player2.paddleY;
 
-				right.side = true;
 				right.p1Paddle = this.oneGame.player2.paddleY;
 				right.p2Paddle = this.oneGame.player1.paddleY;
 
@@ -95,19 +111,5 @@ export class GameGateway
 				this.oneGame.player2.paddleY = 0;
 			}
 		})
-
-
-		// // ball 위치 계속 변경
-		// console.log('Keydowned event:', keyCode);
-
 	}
 }
-
-// @SubscribeMessage("message")
-// name_ft(
-// 		@MessageBody() message: string
-// 	) {
-// 	console.log('Client next:', message);
-// 	this.server.emit("message", message);
-// 	// 로직 추가: 클라이언트가 연결 해제되었을 때 처리할 내용
-// }
