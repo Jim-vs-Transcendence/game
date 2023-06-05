@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	const canvas = document.createElement('canvas');
 	const context = canvas.getContext('2d');
 
+
+	let frameAnimationId;
+
 	/*
 	* Socket Init
 	*/
@@ -78,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	*/
 
 	function mainLogic() {
-		window.requestAnimationFrame(animate);
+		frameAnimationId = window.requestAnimationFrame(animate);
 
 		window.addEventListener('keydown', (key) => {
 			if (key.keyCode === 38) {
@@ -105,6 +108,9 @@ document.addEventListener('DOMContentLoaded', () => {
 			paddle1Y += paddleData.p1Paddle;
 			paddle2Y += paddleData.p2Paddle;
 		});
+
+
+
 
 
 		// window.addEventListener('keydown', (key) => {
@@ -174,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 		// console.log(paddle1Y, ' ', paddle2Y);
 		ball_move();
 		draw();
-		requestAnimationFrame(animate);
+		frameAnimationId = requestAnimationFrame(animate);
 	}
 
 	/*
@@ -182,16 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	*/
 	function reset_game() {
 		if (left_score === 3 || right_score === 3) {
-			console.log('is game win?');
-			// 게임이 끝나면 home버튼과 retry 버튼이 생기고 해당 문구가 출력되게
-			// 캔버스가 requestAnimationFrame 계속 그려질 필요 없이 해당 화면에서 멈추게
-			context.globalAlpha = 0.5;
-			context.font = '30px Arial';
-			context.fillStyle = 'white';
-			context.textAlign = 'center';
-			const textX = canvasWidth / 2;
-			const textY = canvasHeight / 2;
-			context.fillText('someone win', textX, textY);
+			endGame();
 		}
 		ballX = init_ballX;
 		ballY = init_ballY;
@@ -205,17 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
 		// Y false : down
 
 		if (ballX <= 0) {
-			reset_game();
 			right_score++;
+			reset_game();
 		}
 		if (ballX >= canvasWidth - ballRadius * 2) {
-			reset_game();
 			left_score++;
+			reset_game();
 		}
 
-		if (ballY <= 0)
+		if (ballY <= ballRadius)
 			ball_moveY = false;
-		if (ballY >= canvasHeight - ballRadius * 2)
+		if (ballY >= canvasHeight - ballRadius)
 			ball_moveY = true;
 
 		if (ball_moveY === true)
@@ -227,14 +224,14 @@ document.addEventListener('DOMContentLoaded', () => {
 		else if (ball_moveX === true)
 			ballX += ballSpeed;
 
-		if (ballX - ballRadius * 2 <= init_paddle1X && ballX >= init_paddle1X - paddleWidth) {
+		if (ballX - (ballRadius * 2) <= init_paddle1X && ballX >= init_paddle1X - paddleWidth) {
 			if (ballY <= paddle1Y + paddleHeight && ballY >= paddle1Y) {
 				ballX = init_paddle1X + ballRadius * 2;
 				ball_moveX = true;
 			}
 		}
 
-		if (ballX - ballRadius * 2 <= init_paddle2X && ballX >= init_paddle2X - paddleWidth) {
+		if (ballX - ballRadius <= init_paddle2X && ballX >= init_paddle2X - paddleWidth) {
 			if (ballY <= paddle2Y + paddleHeight && ballY >= paddle2Y) {
 				ballX = init_paddle2X - ballRadius * 2;
 				ball_moveX = false;
@@ -263,12 +260,41 @@ document.addEventListener('DOMContentLoaded', () => {
 		let paddle1X = init_paddle1X;
 		let paddle2X = init_paddle2X;
 
+		if (paddle1Y >= canvasHeight - paddleHeight) {
+			paddle1Y = canvasHeight - paddleHeight;
+		}
+		if (paddle1Y <= 0) {
+			paddle1Y = 0;
+		}
+
+		if (paddle2Y >= canvasHeight - paddleHeight) {
+			paddle2Y = canvasHeight - paddleHeight;
+		}
+		if (paddle2Y <= 0) {
+			paddle2Y = 0;
+		}
+
 		context.fillStyle = 'white';
 		context.fillRect(paddle1X, paddle1Y, paddleWidth, paddleHeight);
 
 		context.fillStyle = 'white';
 		context.fillRect(paddle2X, paddle2Y, paddleWidth, paddleHeight);
 
+	}
+
+	function endGame()
+	{
+		console.log(left_score, right_score);
+		// 게임이 끝나면 home버튼과 retry 버튼이 생기고 해당 문구가 출력되게
+		// 캔버스가 requestAnimationFrame 계속 그려질 필요 없이 해당 화면에서 멈추게
+		context.globalAlpha = 0.5;
+		context.font = '30px Arial';
+		context.fillStyle = 'white';
+		context.textAlign = 'center';
+		const textX = canvasWidth / 2;
+		const textY = canvasHeight / 2;
+		context.fillText('someone win', textX, textY);
+		cancelAnimationFrame(frameAnimationId);
 	}
 
 });
