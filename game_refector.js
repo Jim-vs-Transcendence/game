@@ -107,6 +107,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 isEnd = false;
                 gameStarted = true;
             }
+        });
+        playerSocket.on('resetGame', (resetData) => {
+            console.log('game reseted');
+            console.log(resetData);
+            ballX = resetData.ballX;
+            ballY = resetData.ballY;
+            paddle1Y = resetData.paddle1Y;
+            paddle2Y = resetData.paddle2Y;
+            left_score = resetData.leftScore;
+            right_score = resetData.rightScore;
+            console.log(ballX, ballY);
+            console.log(paddle1Y, paddle2Y);
         })
         // window.addEventListener('keypress', function (event) {
         //     if (event.key === 'ArrowDown') {
@@ -183,11 +195,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (myPosition) {
             // Right positio전
             if (ballX <= 0) {
-                right_score++;
                 reset_game();
             }
             if (ballX >= canvasWidth - ballRadius * 2) {
-                left_score++;
                 reset_game();
             }
 
@@ -222,11 +232,11 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
             if (ballX <= 0) {
                 right_score++;
-                reset_game();
+                reset_game(true);
             }
             if (ballX >= canvasWidth - ballRadius * 2) {
                 left_score++;
-                reset_game();
+                reset_game(false);
             }
 
             if (ballY <= ballRadius)
@@ -316,14 +326,22 @@ document.addEventListener('DOMContentLoaded', () => {
         cancelAnimationFrame(frameAnimationId);
     }
 
-    function reset_game() {
+    function reset_game(winner) {
         if (left_score === 3 || right_score === 3) {
             endGame();
+            // 누가 이겼는지 서버에게 데이터 전송
+            // playerSocket.emit()
         }
-        ballX = init_ballX;
-        ballY = init_ballY;
-        paddle1Y = init_paddle1Y;
-        paddle2Y = init_paddle2Y;
+        // 점수 낼 때 마다 서버에 스코어 데이터 전송
+        const data = {
+            clientId: playerSocket.id,
+            winner: winner,
+        }
+        playerSocket.emit('resetGame', data)
+        // ballX = init_ballX;
+        // ballY = init_ballY;
+        // paddle1Y = init_paddle1Y;
+        // paddle2Y = init_paddle2Y;
         // add ball movement
     }
 

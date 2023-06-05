@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, MessageBody } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { PlayerData, Players, Data, startFlag } from './player.data';
+import { PlayerData, Players, Data, ResetData } from './player.data';
 
 @WebSocketGateway()
 export class GameGateway
@@ -22,6 +22,15 @@ export class GameGateway
 		player.paddleY = 0;
 	}
 
+	private initResetData(resetData: ResetData, leftScore: number, rightScore: number) {
+		resetData.ballX = 400 * 0.8;
+		resetData.ballY = 200 * 0.8;
+		resetData.paddle1Y = 200 - (200 * 0.2);
+		resetData.paddle2Y = 200 - (200 * 0.2);
+		resetData.leftScore = leftScore;
+		resetData.rightScore = rightScore;
+	}
+
 	handleConnection(client: Socket) {
 		console.log('Client connected:', client.id);
 
@@ -33,7 +42,6 @@ export class GameGateway
 		else {
 			this.oneGame.player2 = playerData;
 			this.players.push(this.oneGame);
-			console.log('I certainly send the fucking message');
 			this.server.to(this.oneGame.player1.socket).emit('start', false);
 			this.server.to(this.oneGame.player2.socket).emit('start', true);
 		}
@@ -110,6 +118,30 @@ export class GameGateway
 				this.oneGame.player1.paddleY = 0;
 				this.oneGame.player2.paddleY = 0;
 			}
+		})
+
+		client.on('resetGame', (data: { clientId: string, winner: boolean }) => {
+			const { clientId, winner } = data;
+			if (this.oneGame.player1.socket === data.clientId) {
+				if (winner)
+					this.oneGame.player1.score++;
+				else
+					this.oneGame.player2.score++;
+			}
+			else if (this.oneGame.player2.socket === data.clientId) {
+				if (winner)
+					this.oneGame.player2.score++;
+				else
+					this.oneGame.player1.score++;
+			}
+			let leftData: ResetData = new ResetData();
+			let rightData: ResetData = new ResetData();
+			this.initResetData(leftData, this.oneGame.player1.score, this.oneGame.player2.score);
+			this.initResetData(rightData, this.oneGame.player2.score, this.oneGame.player1.score);
+			console.log(leftData);
+			console.log(rightData);
+			this.server.to(this.oneGame.player1.socket).emit('resetGame', leftData);
+			this.server.to(this.oneGame.player2.socket).emit('resetGame', rightData);
 		})
 	}
 }
