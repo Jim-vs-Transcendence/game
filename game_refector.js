@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let isEnd = true;
 
+    // left player일 경우 false, right player일 경우 true
     let myPosition = false;
 
     // Canvas Ratio
@@ -48,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let ballMoveX = false;
     let ballMoveY = false;
 
-    const ballSpeed = 1;
+    const ballSpeed = 3;
 
     // Paddle
     const paddleWidth = canvasWidth * 0.02;
@@ -83,9 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
     playerSocket.on('connect', () => {
         setGame();
     });
-
-
-
 
     /*
      * Main Game Logic
@@ -193,12 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // X false : left
         // Y false : down
         if (myPosition) {
-            // Right positio전
-            if (ballX <= 0) {
-                reset_game();
+            // Right position 전
+            if (ballX <= -1) { // 0
+                reset_game(false);
             }
-            if (ballX >= canvasWidth - ballRadius * 2) {
-                reset_game();
+            if (ballX >= canvasWidth - ballRadius * 2 + 1) { // * 2
+                reset_game(true);
             }
 
             if (ballY <= ballRadius)
@@ -207,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ballMoveY = true;
 
             if (ballMoveY === true)
-                ballY -= ballSpeed; // check
+                ballY -= ballSpeed;
             else if (ballMoveY === false)
                 ballY += ballSpeed;
             if (ballMoveX === true)
@@ -222,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (ballX - ballRadius <= init_paddle2X && ballX >= init_paddle2X - paddleWidth) {
+            if (ballX - (ballRadius * 2) <= init_paddle2X && ballX >= init_paddle2X - paddleWidth) {
                 if (ballY <= paddle2Y + paddleHeight && ballY >= paddle2Y) {
                     ballX = init_paddle2X - ballRadius * 2;
                     ballMoveX = true;
@@ -231,11 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         else {
             if (ballX <= 0) {
-                right_score++;
                 reset_game(true);
             }
             if (ballX >= canvasWidth - ballRadius * 2) {
-                left_score++;
                 reset_game(false);
             }
 
@@ -245,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ballMoveY = true;
 
             if (ballMoveY === true)
-                ballY -= ballSpeed; // check
+                ballY -= ballSpeed;
             else if (ballMoveY === false)
                 ballY += ballSpeed;
             if (ballMoveX === false)
@@ -327,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function reset_game(winner) {
+        console.log(typeof winner);
         if (left_score === 3 || right_score === 3) {
             endGame();
             // 누가 이겼는지 서버에게 데이터 전송
@@ -338,56 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
             winner: winner,
         }
         playerSocket.emit('resetGame', data)
-        // ballX = init_ballX;
-        // ballY = init_ballY;
-        // paddle1Y = init_paddle1Y;
-        // paddle2Y = init_paddle2Y;
-        // add ball movement
     }
 
-
-    // endGameMenu: function (text) {
-    // 	// Change the canvas font size and color
-    // 	Pong.context.font = '50px Courier New';
-    // 	Pong.context.fillStyle = this.color;
-
-    // 	// Draw the rectangle behind the 'Press any key to begin' text.
-    // 	Pong.context.fillRect(
-    // 		Pong.canvas.width / 2 - 350,
-    // 		Pong.canvas.height / 2 - 48,
-    // 		700,
-    // 		100
-    // 	);
-
-    // 	// Change the canvas color;
-    // 	Pong.context.fillStyle = '#ffffff';
-
-    // 	// Draw the end game menu text ('Game Over' and 'Winner')
-    // 	Pong.context.fillText(text,
-    // 		Pong.canvas.width / 2,
-    // 		Pong.canvas.height / 2 + 15
-    // 	);
-
-    // 	setTimeout(function () {
-    // 		Pong = Object.assign({}, Game);
-    // 		Pong.initialize();
-    // 	}, 3000);
-    // },
-
-    // const waitForStart = setInterval(() => {
-    // 	if (!gameStarted) return
-    // 	clearInterval(waitForStart)
-    // 	Pong.running = true
-    // 	window.requestAnimationFrame(Pong.loop)
-    // }, 100)
-
-    // _turnDelayIsOver: function () {
-    // 	return ((new Date()).getTime() - this.timer >= 1000);
-    // },
-
-    // setTimeout(function () {
-    // 	Pong = Object.assign({}, Game);
-    // 	Pong.initialize();
-    // }, 3000);
 
 });

@@ -14,6 +14,11 @@ export class GameGateway
 	private leftReady: boolean = false;
 	private RightReady: boolean = false;
 
+	// added
+	private resetFlag: boolean = false;
+	private resetp1: boolean = false;
+	private resetp2: boolean = false;
+
 	@WebSocketServer() server: Server;
 
 	private initPlayer(player: PlayerData, clientId: string) {
@@ -30,6 +35,13 @@ export class GameGateway
 		resetData.leftScore = leftScore;
 		resetData.rightScore = rightScore;
 	}
+
+	@SubscribeMessage('keypress')
+
+	// controller -> 모든 데이터 종합
+	// service -> 모든 실행 함수를 갖고 있음
+	// gateway -> 소켓 핸들링
+
 
 	handleConnection(client: Socket) {
 		console.log('Client connected:', client.id);
@@ -122,26 +134,42 @@ export class GameGateway
 
 		client.on('resetGame', (data: { clientId: string, winner: boolean }) => {
 			const { clientId, winner } = data;
-			if (this.oneGame.player1.socket === data.clientId) {
-				if (winner)
-					this.oneGame.player1.score++;
-				else
-					this.oneGame.player2.score++;
+			if (clientId === this.oneGame.player1.socket) {
+				this.resetp1 = true;
 			}
-			else if (this.oneGame.player2.socket === data.clientId) {
-				if (winner)
-					this.oneGame.player2.score++;
-				else
-					this.oneGame.player1.score++;
+			else {
+				this.resetp2 = true;
 			}
-			let leftData: ResetData = new ResetData();
-			let rightData: ResetData = new ResetData();
-			this.initResetData(leftData, this.oneGame.player1.score, this.oneGame.player2.score);
-			this.initResetData(rightData, this.oneGame.player2.score, this.oneGame.player1.score);
-			console.log(leftData);
-			console.log(rightData);
-			this.server.to(this.oneGame.player1.socket).emit('resetGame', leftData);
-			this.server.to(this.oneGame.player2.socket).emit('resetGame', rightData);
+			if (this.resetp1 && this.resetp2) {
+				this.resetFlag = true;
+			}
+			if (this.resetFlag) {
+				console.log('whos in?', clientId, ' ', 'winner:', winner);
+				if (this.oneGame.player1.socket === data.clientId) {
+					if (winner)
+						this.oneGame.player2.score++;
+					else
+						this.oneGame.player1.score++;
+				}
+				else if (this.oneGame.player2.socket === data.clientId) {
+					if (winner)
+						this.oneGame.player2.score++;
+					else
+						this.oneGame.player1.score++;
+				}
+
+				let leftData: ResetData = new ResetData();
+				let rightData: ResetData = new ResetData();
+				this.initResetData(leftData, this.oneGame.player1.score, this.oneGame.player2.score);
+				this.initResetData(rightData, this.oneGame.player2.score, this.oneGame.player1.score);
+				console.log(leftData);
+				console.log(rightData);
+				this.server.to(this.oneGame.player1.socket).emit('resetGame', leftData);
+				this.server.to(this.oneGame.player2.socket).emit('resetGame', rightData);
+				this.resetp1 = false;
+				this.resetp2 = false;
+				this.resetFlag = false;
+			}
 		})
 	}
 }
