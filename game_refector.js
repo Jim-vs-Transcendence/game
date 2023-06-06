@@ -117,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             right_score = resetData.rightScore;
             console.log(ballX, ballY);
             console.log(paddle1Y, paddle2Y);
+            isEnd = false;
         })
         // window.addEventListener('keypress', function (event) {
         //     if (event.key === 'ArrowDown') {
@@ -194,9 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Right position 전
             if (ballX <= -1) { // 0
                 reset_game(false);
+                isEnd = true;
             }
             if (ballX >= canvasWidth - ballRadius * 2 + 1) { // * 2
                 reset_game(true);
+                isEnd = true;
             }
 
             if (ballY <= ballRadius)
@@ -230,9 +233,11 @@ document.addEventListener('DOMContentLoaded', () => {
         else {
             if (ballX <= 0) {
                 reset_game(true);
+                isEnd = true;
             }
             if (ballX >= canvasWidth - ballRadius * 2) {
                 reset_game(false);
+                isEnd = true;
             }
 
             if (ballY <= ballRadius)
